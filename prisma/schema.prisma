@@ -19,6 +19,13 @@ model SmtpConfig {
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  apiKey           String?  // 新增，可選，支援 API key 方式
 
   @@map("smtp_configs")
+}
+
+model Admin {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
 }

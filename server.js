@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -107,15 +108,28 @@ app.post('/send-email', async (req, res) => {
 
     const selectedConfig = availableConfigs[0];
 
-    const transporter = nodemailer.createTransporter({
-      host: selectedConfig.host,
-      port: selectedConfig.port,
-      secure: selectedConfig.port === 465,
-      auth: {
-        user: selectedConfig.username,
-        pass: selectedConfig.password
-      }
-    });
+    let transporter;
+    if (selectedConfig.apiKey) {
+      // SendGrid 方式
+      transporter = nodemailer.createTransport({
+        service: 'SendGrid',
+        auth: {
+          user: 'apikey',
+          pass: selectedConfig.apiKey
+        }
+      });
+    } else {
+      // 傳統 SMTP 方式
+      transporter = nodemailer.createTransport({
+        host: selectedConfig.host,
+        port: selectedConfig.port,
+        secure: selectedConfig.port === 465,
+        auth: {
+          user: selectedConfig.username,
+          pass: selectedConfig.password
+        }
+      });
+    }
 
     const mailOptions = {
       from: selectedConfig.username,
@@ -151,6 +165,27 @@ app.post('/api/reset-monthly-usage', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to reset monthly usage' });
   }
+});
+
+(async () => {
+  // 啟動時自動建立 admin/yan111
+  const admin = await prisma.admin.findUnique({ where: { username: 'admin' } });
+  if (!admin) {
+    const hashedPassword = await bcrypt.hash('yan111', 10);
+    await prisma.admin.create({ data: { username: 'admin', password: hashedPassword } });
+    console.log('Default admin created: admin/yan111');
+  }
+})();
+
+// 登入 API
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  const admin = await prisma.admin.findUnique({ where: { username } });
+  if (!admin) return res.status(401).json({ error: 'Invalid credentials' });
+  const valid = await bcrypt.compare(password, admin.password);
+  if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+  // 這裡可回傳 token 或 session，暫時只回傳成功
+  res.json({ message: 'Login successful' });
 });
 
 app.listen(PORT, () => {
