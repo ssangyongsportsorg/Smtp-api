@@ -312,7 +312,7 @@ app.delete('/api/admin/smtp-configs/:id', authenticateToken, async (req, res) =>
 // Public email sending endpoint (requires API key)
 app.post('/api/send-email', authenticateApiKey, async (req, res) => {
   try {
-    const { to, subject, text, html } = req.body;
+    const { to, subject, text, html, from } = req.body;
     
     // Find available SMTP configuration
     const availableConfigs = await prisma.smtpConfig.findMany({
@@ -341,7 +341,7 @@ app.post('/api/send-email', authenticateApiKey, async (req, res) => {
     const selectedConfig = availableConfigs[0];
 
     // Create transporter
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: selectedConfig.host,
       port: selectedConfig.port,
       secure: selectedConfig.port === 465,
@@ -352,7 +352,7 @@ app.post('/api/send-email', authenticateApiKey, async (req, res) => {
     });
 
     const mailOptions = {
-      from: selectedConfig.username,
+      from: from || selectedConfig.username, // Use custom sender or default to SMTP username
       to,
       subject,
       text,

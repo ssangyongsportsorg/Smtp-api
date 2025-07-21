@@ -152,9 +152,17 @@ Content-Type: application/json
   "to": "recipient@example.com",
   "subject": "測試郵件",
   "text": "這是純文本內容",
-  "html": "<h1>這是 HTML 內容</h1><p>支持 HTML 格式</p>"
+  "html": "<h1>這是 HTML 內容</h1><p>支持 HTML 格式</p>",
+  "from": "sender@example.com"
 }
 ```
+
+**參數說明:**
+- `to` (必填): 收件人郵箱地址
+- `subject` (必填): 郵件主題
+- `text` (可選): 純文本內容
+- `html` (可選): HTML 格式內容
+- `from` (可選): 寄件人郵箱地址，如不提供則使用 SMTP 配置的用戶名
 
 **回應:**
 ```json
@@ -276,7 +284,8 @@ async function sendEmail() {
         to: 'recipient@example.com',
         subject: '測試郵件',
         text: '這是純文本內容',
-        html: '<h1>Hello World</h1><p>這是 HTML 郵件</p>'
+        html: '<h1>Hello World</h1><p>這是 HTML 郵件</p>',
+        from: 'sender@example.com'
       })
     });
 
@@ -300,7 +309,8 @@ curl -X POST http://localhost:3000/api/send-email \
     "to": "recipient@example.com",
     "subject": "測試郵件",
     "text": "這是純文本內容",
-    "html": "<h1>Hello World</h1><p>這是 HTML 郵件</p>"
+    "html": "<h1>Hello World</h1><p>這是 HTML 郵件</p>",
+    "from": "sender@example.com"
   }'
 ```
 
