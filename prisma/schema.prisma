@@ -3,8 +3,36 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model ApiKey {
+  id          Int      @id @default(autoincrement())
+  keyName     String   @unique
+  keyValue    String   @unique
+  isActive    Boolean  @default(true)
+  usageCount  Int      @default(0)
+  maxUsage    Int?     // null means unlimited
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime?
+
+  emailLogs   EmailLog[]
+
+  @@map("api_keys")
 }
 
 model SmtpConfig {
@@ -20,5 +48,23 @@ model SmtpConfig {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  emailLogs        EmailLog[]
+
   @@map("smtp_configs")
+}
+
+model EmailLog {
+  id          Int      @id @default(autoincrement())
+  apiKeyId    Int?
+  smtpConfigId Int?
+  to          String
+  subject     String
+  status      String   // 'sent', 'failed'
+  errorMessage String?
+  sentAt      DateTime @default(now())
+
+  apiKey      ApiKey?     @relation(fields: [apiKeyId], references: [id])
+  smtpConfig  SmtpConfig? @relation(fields: [smtpConfigId], references: [id])
+
+  @@map("email_logs")
 }

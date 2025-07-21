@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP 輪播系統 - 管理後台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px;
+        }
+
+        .login-form {
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .admin-panel {
+            display: none;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #495057;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-active {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .key-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .nav-tab {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 登入表單 -->
+        <div id="loginForm" class="login-form">
+            <h2 style="margin-bottom: 30px; color: #333;">管理員登入</h2>
+            <div id="loginMessage"></div>
+            <form id="loginFormElement">
+                <div class="form-group">
+                    <label for="username">用戶名</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密碼</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">登入</button>
+            </form>
+        </div>
+
+        <!-- 管理面板 -->
+        <div id="adminPanel" class="admin-panel">
+            <div class="header">
+                <h1>SMTP 輪播系統管理後台</h1>
+                <div>
+                    <span id="adminInfo"></span>
+                    <button class="btn btn-secondary" onclick="logout()">登出</button>
+                </div>
+            </div>
+
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('dashboard')">儀表板</button>
+                <button class="nav-tab" onclick="showTab('smtp')">SMTP 配置</button>
+                <button class="nav-tab" onclick="showTab('apikeys')">API 密鑰</button>
+                <button class="nav-tab" onclick="showTab('logs')">郵件記錄</button>
+                <button class="nav-tab" onclick="showTab('settings')">設定</button>
+            </div>
+
+            <!-- 儀表板 -->
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalEmails">0</div>
+                        <div class="stat-label">總發送郵件</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="activeSmtp">0</div>
+                        <div class="stat-label">活躍 SMTP</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="activeApiKeys">0</div>
+                        <div class="stat-label">活躍 API 密鑰</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="todayEmails">0</div>
+                        <div class="stat-label">今日郵件</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="resetMonthlyUsage()">重置月使用量</button>
+            </div>
+
+            <!-- SMTP 配置 -->
+            <div id="smtp" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>SMTP 配置管理</h3>
+                    <button class="btn btn-primary" onclick="showAddSmtpModal()">新增 SMTP</button>
+                </div>
+                <div id="smtpMessage"></div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>名稱</th>
+                            <th>主機</th>
+                            <th>端口</th>
+                            <th>用戶名</th>
+                            <th>月配額</th>
+                            <th>當前使用</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smtpTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- API 密鑰 -->
+            <div id="apikeys" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>API 密鑰管理</h3>
+                    <button class="btn btn-primary" onclick="showAddApiKeyModal()">新增 API 密鑰</button>
+                </div>
+                <div id="apiKeyMessage"></div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>名稱</th>
+                            <th>密鑰</th>
+                            <th>使用次數</th>
+                            <th>最大使用次數</th>
+                            <th>到期時間</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apiKeyTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- 郵件記錄 -->
+            <div id="logs" class="tab-content">
+                <h3>郵件發送記錄</h3>
+                <div id="logsMessage"></div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>時間</th>
+                            <th>收件人</th>
+                            <th>主題</th>
+                            <th>API 密鑰</th>
+                            <th>SMTP</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody"></tbody>
+                </table>
+                <div id="pagination" style="margin-top: 20px; text-align: center;"></div>
+            </div>
+
+            <!-- 設定 -->
+            <div id="settings" class="tab-content">
+                <h3>系統設定</h3>
+                <div id="settingsMessage"></div>
+                <form id="changePasswordForm">
+                    <h4>更改密碼</h4>
+                    <div class="form-group">
+                        <label for="currentPassword">當前密碼</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">新密碼</label>
+                        <input type="password" id="newPassword" name="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">確認新密碼</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">更改密碼</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SMTP 配置 Modal -->
+    <div id="smtpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('smtpModal')">&times;</span>
+            <h3 id="smtpModalTitle">新增 SMTP 配置</h3>
+            <form id="smtpForm">
+                <input type="hidden" id="smtpId" name="smtpId">
+                <div class="form-group">
+                    <label for="smtpName">名稱</label>
+                    <input type="text" id="smtpName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="smtpHost">SMTP 主機</label>
+                    <input type="text" id="smtpHost" name="host" required>
+                </div>
+                <div class="form-group">
+                    <label for="smtpPort">端口</label>
+                    <input type="number" id="smtpPort" name="port" required>
+                </div>
+                <div class="form-group">
+                    <label for="smtpUsername">用戶名</label>
+                    <input type="text" id="smtpUsername" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="smtpPassword">密碼</label>
+                    <input type="password" id="smtpPassword" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="smtpQuota">月配額</label>
+                    <input type="number" id="smtpQuota" name="maxMonthlyQuota" required>
+                </div>
+                <div class="form-group">
+                    <label for="smtpActive">狀態</label>
+                    <select id="smtpActive" name="isActive">
+                        <option value="true">啟用</option>
+                        <option value="false">停用</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">保存</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('smtpModal')">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- API 密鑰 Modal -->
+    <div id="apiKeyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('apiKeyModal')">&times;</span>
+            <h3 id="apiKeyModalTitle">新增 API 密鑰</h3>
+            <form id="apiKeyForm">
+                <input type="hidden" id="apiKeyId" name="apiKeyId">
+                <div class="form-group">
+                    <label for="keyName">密鑰名稱</label>
+                    <input type="text" id="keyName" name="keyName" required>
+                </div>
+                <div class="form-group">
+                    <label for="maxUsage">最大使用次數（空白為無限制）</label>
+                    <input type="number" id="maxUsage" name="maxUsage">
+                </div>
+                <div class="form-group">
+                    <label for="expiresAt">到期時間（可選）</label>
+                    <input type="datetime-local" id="expiresAt" name="expiresAt">
+                </div>
+                <div class="form-group">
+                    <label for="apiKeyActive">狀態</label>
+                    <select id="apiKeyActive" name="isActive">
+                        <option value="true">啟用</option>
+                        <option value="false">停用</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">保存</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('apiKeyModal')">取消</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('adminToken');
+        let currentPage = 1;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            if (authToken) {
+                showAdminPanel();
+                loadDashboard();
+            }
+        });
+
+        // 登入
+        document.getElementById('loginFormElement').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const credentials = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(credentials)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    authToken = data.token;
+                    localStorage.setItem('adminToken', authToken);
+                    localStorage.setItem('adminInfo', JSON.stringify(data.admin));
+                    showAdminPanel();
+                    loadDashboard();
+                } else {
+                    showMessage('loginMessage', data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('loginMessage', '登入失敗', 'error');
+            }
+        });
+
+        // 登出
+        function logout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminInfo');
+            authToken = null;
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+        }
+
+        // 顯示管理面板
+        function showAdminPanel() {
+            const adminInfo = JSON.parse(localStorage.getItem('adminInfo'));
+            document.getElementById('adminInfo').textContent = `歡迎，${adminInfo.username}`;
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+        }
+
+        // 標籤切換
+        function showTab(tabName) {
+            // 隱藏所有標籤內容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // 顯示選中的標籤
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // 載入對應數據
+            switch(tabName) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'smtp':
+                    loadSmtpConfigs();
+                    break;
+                case 'apikeys':
+                    loadApiKeys();
+                    break;
+                case 'logs':
+                    loadEmailLogs();
+                    break;
+            }
+        }
+
+        // API 請求函數
+        async function apiRequest(url, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            };
+
+            const mergedOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers
+                }
+            };
+
+            const response = await fetch(url, mergedOptions);
+            
+            if (response.status === 401) {
+                logout();
+                return;
+            }
+
+            return response;
+        }
+
+        // 載入儀表板
+        async function loadDashboard() {
+            try {
+                const [smtpResponse, apiKeyResponse, logsResponse] = await Promise.all([
+                    apiRequest('/api/admin/smtp-configs'),
+                    apiRequest('/api/admin/api-keys'),
+                    apiRequest('/api/admin/email-logs?limit=1000')
+                ]);
+
+                if (smtpResponse && smtpResponse.ok) {
+                    const smtpData = await smtpResponse.json();
+                    const activeSmtp = smtpData.filter(smtp => smtp.isActive).length;
+                    const totalUsage = smtpData.reduce((sum, smtp) => sum + smtp.currentUsage, 0);
+                    
+                    document.getElementById('activeSmtp').textContent = activeSmtp;
+                    document.getElementById('totalEmails').textContent = totalUsage;
+                }
+
+                if (apiKeyResponse && apiKeyResponse.ok) {
+                    const apiKeyData = await apiKeyResponse.json();
+                    const activeApiKeys = apiKeyData.filter(key => key.isActive).length;
+                    document.getElementById('activeApiKeys').textContent = activeApiKeys;
+                }
+
+                if (logsResponse && logsResponse.ok) {
+                    const logsData = await logsResponse.json();
+                    const today = new Date().toDateString();
+                    const todayEmails = logsData.logs.filter(log => 
+                        new Date(log.sentAt).toDateString() === today && log.status === 'sent'
+                    ).length;
+                    document.getElementById('todayEmails').textContent = todayEmails;
+                }
+
+            } catch (error) {
+                console.error('載入儀表板失敗:', error);
+            }
+        }
+
+        // 載入 SMTP 配置
+        async function loadSmtpConfigs() {
+            try {
+                const response = await apiRequest('/api/admin/smtp-configs');
+                if (response && response.ok) {
+                    const configs = await response.json();
+                    displaySmtpConfigs(configs);
+                }
+            } catch (error) {
+                showMessage('smtpMessage', '載入 SMTP 配置失敗', 'error');
+            }
+        }
+
+        // 顯示 SMTP 配置
+        function displaySmtpConfigs(configs) {
+            const tbody = document.getElementById('smtpTableBody');
+            tbody.innerHTML = '';
+
+            configs.forEach(config => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${config.name}</td>
+                    <td>${config.host}</td>
+                    <td>${config.port}</td>
+                    <td>${config.username}</td>
+                    <td>${config.maxMonthlyQuota}</td>
+                    <td>${config.currentUsage}</td>
+                    <td><span class="status-${config.isActive ? 'active' : 'inactive'}">${config.isActive ? '啟用' : '停用'}</span></td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editSmtpConfig(${config.id})">編輯</button>
+                        <button class="btn btn-danger" onclick="deleteSmtpConfig(${config.id})">刪除</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 載入 API 密鑰
+        async function loadApiKeys() {
+            try {
+                const response = await apiRequest('/api/admin/api-keys');
+                if (response && response.ok) {
+                    const apiKeys = await response.json();
+                    displayApiKeys(apiKeys);
+                }
+            } catch (error) {
+                showMessage('apiKeyMessage', '載入 API 密鑰失敗', 'error');
+            }
+        }
+
+        // 顯示 API 密鑰
+        function displayApiKeys(apiKeys) {
+            const tbody = document.getElementById('apiKeyTableBody');
+            tbody.innerHTML = '';
+
+            apiKeys.forEach(key => {
+                const row = document.createElement('tr');
+                const shortKey = key.keyValue.substring(0, 20) + '...';
+                const maxUsageText = key.maxUsage ? key.maxUsage : '無限制';
+                const expiresText = key.expiresAt ? new Date(key.expiresAt).toLocaleDateString() : '永不過期';
+                
+                row.innerHTML = `
+                    <td>${key.keyName}</td>
+                    <td><div class="key-display">${shortKey}</div></td>
+                    <td>${key.usageCount}</td>
+                    <td>${maxUsageText}</td>
+                    <td>${expiresText}</td>
+                    <td><span class="status-${key.isActive ? 'active' : 'inactive'}">${key.isActive ? '啟用' : '停用'}</span></td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editApiKey(${key.id})">編輯</button>
+                        <button class="btn btn-danger" onclick="deleteApiKey(${key.id})">刪除</button>
+                        <button class="btn btn-primary" onclick="showFullApiKey('${key.keyValue}')">顯示完整密鑰</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 載入郵件記錄
+        async function loadEmailLogs(page = 1) {
+            try {
+                const response = await apiRequest(`/api/admin/email-logs?page=${page}&limit=50`);
+                if (response && response.ok) {
+                    const data = await response.json();
+                    displayEmailLogs(data.logs);
+                    displayPagination(data.pagination);
+                }
+            } catch (error) {
+                showMessage('logsMessage', '載入郵件記錄失敗', 'error');
+            }
+        }
+
+        // 顯示郵件記錄
+        function displayEmailLogs(logs) {
+            const tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = '';
+
+            logs.forEach(log => {
+                const row = document.createElement('tr');
+                const apiKeyName = log.apiKey ? log.apiKey.keyName : 'N/A';
+                const smtpName = log.smtpConfig ? log.smtpConfig.name : 'N/A';
+                
+                row.innerHTML = `
+                    <td>${new Date(log.sentAt).toLocaleString()}</td>
+                    <td>${log.to}</td>
+                    <td>${log.subject}</td>
+                    <td>${apiKeyName}</td>
+                    <td>${smtpName}</td>
+                    <td><span class="status-${log.status === 'sent' ? 'active' : 'inactive'}">${log.status === 'sent' ? '成功' : '失敗'}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 顯示分頁
+        function displayPagination(pagination) {
+            const paginationDiv = document.getElementById('pagination');
+            let html = '';
+
+            for (let i = 1; i <= pagination.pages; i++) {
+                const activeClass = i === pagination.page ? 'btn-primary' : 'btn-secondary';
+                html += `<button class="btn ${activeClass}" onclick="loadEmailLogs(${i})">${i}</button>`;
+            }
+
+            paginationDiv.innerHTML = html;
+        }
+
+        // Modal 函數
+        function showAddSmtpModal() {
+            document.getElementById('smtpModalTitle').textContent = '新增 SMTP 配置';
+            document.getElementById('smtpForm').reset();
+            document.getElementById('smtpId').value = '';
+            document.getElementById('smtpModal').style.display = 'block';
+        }
+
+        function showAddApiKeyModal() {
+            document.getElementById('apiKeyModalTitle').textContent = '新增 API 密鑰';
+            document.getElementById('apiKeyForm').reset();
+            document.getElementById('apiKeyId').value = '';
+            document.getElementById('apiKeyModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // SMTP 配置表單提交
+        document.getElementById('smtpForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const isEdit = data.smtpId !== '';
+
+            try {
+                const url = isEdit ? `/api/admin/smtp-configs/${data.smtpId}` : '/api/admin/smtp-configs';
+                const method = isEdit ? 'PUT' : 'POST';
+
+                const response = await apiRequest(url, {
+                    method: method,
+                    body: JSON.stringify(data)
+                });
+
+                if (response && response.ok) {
+                    closeModal('smtpModal');
+                    loadSmtpConfigs();
+                    showMessage('smtpMessage', `SMTP 配置${isEdit ? '更新' : '新增'}成功`, 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage('smtpMessage', error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('smtpMessage', `${isEdit ? '更新' : '新增'} SMTP 配置失敗`, 'error');
+            }
+        });
+
+        // API 密鑰表單提交
+        document.getElementById('apiKeyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            const isEdit = data.apiKeyId !== '';
+
+            try {
+                const url = isEdit ? `/api/admin/api-keys/${data.apiKeyId}` : '/api/admin/api-keys';
+                const method = isEdit ? 'PUT' : 'POST';
+
+                const response = await apiRequest(url, {
+                    method: method,
+                    body: JSON.stringify(data)
+                });
+
+                if (response && response.ok) {
+                    closeModal('apiKeyModal');
+                    loadApiKeys();
+                    showMessage('apiKeyMessage', `API 密鑰${isEdit ? '更新' : '新增'}成功`, 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage('apiKeyMessage', error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('apiKeyMessage', `${isEdit ? '更新' : '新增'} API 密鑰失敗`, 'error');
+            }
+        });
+
+        // 更改密碼表單提交
+        document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            if (data.newPassword !== data.confirmPassword) {
+                showMessage('settingsMessage', '新密碼和確認密碼不匹配', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiRequest('/api/admin/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        currentPassword: data.currentPassword,
+                        newPassword: data.newPassword
+                    })
+                });
+
+                if (response && response.ok) {
+                    showMessage('settingsMessage', '密碼更改成功', 'success');
+                    e.target.reset();
+                } else {
+                    const error = await response.json();
+                    showMessage('settingsMessage', error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('settingsMessage', '更改密碼失敗', 'error');
+            }
+        });
+
+        // 編輯 SMTP 配置
+        async function editSmtpConfig(id) {
+            try {
+                const response = await apiRequest('/api/admin/smtp-configs');
+                if (response && response.ok) {
+                    const configs = await response.json();
+                    const config = configs.find(c => c.id === id);
+                    
+                    document.getElementById('smtpModalTitle').textContent = '編輯 SMTP 配置';
+                    document.getElementById('smtpId').value = config.id;
+                    document.getElementById('smtpName').value = config.name;
+                    document.getElementById('smtpHost').value = config.host;
+                    document.getElementById('smtpPort').value = config.port;
+                    document.getElementById('smtpUsername').value = config.username;
+                    document.getElementById('smtpPassword').value = config.password;
+                    document.getElementById('smtpQuota').value = config.maxMonthlyQuota;
+                    document.getElementById('smtpActive').value = config.isActive.toString();
+                    
+                    document.getElementById('smtpModal').style.display = 'block';
+                }
+            } catch (error) {
+                showMessage('smtpMessage', '載入 SMTP 配置失敗', 'error');
+            }
+        }
+
+        // 刪除 SMTP 配置
+        async function deleteSmtpConfig(id) {
+            if (!confirm('確定要刪除此 SMTP 配置嗎？')) {
+                return;
+            }
+
+            try {
+                const response = await apiRequest(`/api/admin/smtp-configs/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response && response.ok) {
+                    loadSmtpConfigs();
+                    showMessage('smtpMessage', 'SMTP 配置刪除成功', 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage('smtpMessage', error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('smtpMessage', '刪除 SMTP 配置失敗', 'error');
+            }
+        }
+
+        // 編輯 API 密鑰
+        async function editApiKey(id) {
+            try {
+                const response = await apiRequest('/api/admin/api-keys');
+                if (response && response.ok) {
+                    const apiKeys = await response.json();
+                    const apiKey = apiKeys.find(k => k.id === id);
+                    
+                    document.getElementById('apiKeyModalTitle').textContent = '編輯 API 密鑰';
+                    document.getElementById('apiKeyId').value = apiKey.id;
+                    document.getElementById('keyName').value = apiKey.keyName;
+                    document.getElementById('maxUsage').value = apiKey.maxUsage || '';
+                    document.getElementById('expiresAt').value = apiKey.expiresAt ? 
+                        new Date(apiKey.expiresAt).toISOString().slice(0, 16) : '';
+                    document.getElementById('apiKeyActive').value = apiKey.isActive.toString();
+                    
+                    document.getElementById('apiKeyModal').style.display = 'block';
+                }
+            } catch (error) {
+                showMessage('apiKeyMessage', '載入 API 密鑰失敗', 'error');
+            }
+        }
+
+        // 刪除 API 密鑰
+        async function deleteApiKey(id) {
+            if (!confirm('確定要刪除此 API 密鑰嗎？')) {
+                return;
+            }
+
+            try {
+                const response = await apiRequest(`/api/admin/api-keys/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response && response.ok) {
+                    loadApiKeys();
+                    showMessage('apiKeyMessage', 'API 密鑰刪除成功', 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage('apiKeyMessage', error.error, 'error');
+                }
+            } catch (error) {
+                showMessage('apiKeyMessage', '刪除 API 密鑰失敗', 'error');
+            }
+        }
+
+        // 顯示完整 API 密鑰
+        function showFullApiKey(keyValue) {
+            alert(`完整 API 密鑰：\n${keyValue}`);
+        }
+
+        // 重置月使用量
+        async function resetMonthlyUsage() {
+            if (!confirm('確定要重置所有 SMTP 的月使用量嗎？')) {
+                return;
+            }
+
+            try {
+                const response = await apiRequest('/api/admin/reset-monthly-usage', {
+                    method: 'POST'
+                });
+
+                if (response && response.ok) {
+                    loadDashboard();
+                    loadSmtpConfigs();
+                    alert('月使用量重置成功');
+                } else {
+                    const error = await response.json();
+                    alert('重置失敗：' + error.error);
+                }
+            } catch (error) {
+                alert('重置月使用量失敗');
+            }
+        }
+
+        // 顯示消息
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                element.innerHTML = '';
+            }, 5000);
+        }
+
+        // 點擊外部關閉 modal
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
