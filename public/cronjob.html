@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cron Job - 重置月使用量</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-3xl font-bold text-gray-900 mb-6">Cron Job - 重置月使用量</h1>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h2 class="text-lg font-semibold text-blue-800 mb-2">系統說明</h2>
+                <p class="text-blue-700">此頁面用於每月 1 號重置所有 SMTP 配置的使用量。請在您的 cron job 中訪問此頁面。</p>
+            </div>
+
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">當前 SMTP 使用狀況</h2>
+                    <p class="text-gray-600">點擊下方按鈕可手動重置所有配置的月使用量</p>
+                </div>
+                <button onclick="resetMonthlyUsage()" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                    重置月使用量
+                </button>
+            </div>
+
+            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">名稱</th>
+                            <th scope="col" class="px-6 py-3">主機</th>
+                            <th scope="col" class="px-6 py-3">月額度</th>
+                            <th scope="col" class="px-6 py-3">已使用</th>
+                            <th scope="col" class="px-6 py-3">使用率</th>
+                            <th scope="col" class="px-6 py-3">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smtpTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="resetResult" class="mt-6 hidden">
+                <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50" role="alert">
+                    <span class="font-medium">成功！</span> 所有 SMTP 配置的月使用量已重置為 0。
+                </div>
+            </div>
+
+            <div class="mt-8 bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Cron Job 設定範例</h3>
+                <p class="text-gray-600 mb-2">每月 1 號凌晨 0 點執行重置：</p>
+                <code class="block bg-gray-800 text-green-400 p-3 rounded text-sm">
+                    0 0 1 * * curl -X GET http://your-domain.com/cronjob
+                </code>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script>
+        let smtpConfigs = [];
+
+        async function loadSMTPConfigs() {
+            try {
+                const response = await fetch('/api/smtp-configs');
+                smtpConfigs = await response.json();
+                renderSMTPTable();
+            } catch (error) {
+                console.error('Error loading SMTP configs:', error);
+            }
+        }
+
+        function renderSMTPTable() {
+            const tbody = document.getElementById('smtpTableBody');
+            tbody.innerHTML = '';
+
+            smtpConfigs.forEach(config => {
+                const usagePercentage = (config.currentUsage / config.maxMonthlyQuota * 100).toFixed(1);
+                const isOverQuota = config.currentUsage >= config.maxMonthlyQuota;
+                
+                const row = `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">${config.name}</td>
+                        <td class="px-6 py-4">${config.host}</td>
+                        <td class="px-6 py-4">${config.maxMonthlyQuota}</td>
+                        <td class="px-6 py-4">
+                            <span class="${isOverQuota ? 'text-red-600' : 'text-green-600'}">${config.currentUsage}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-${isOverQuota ? 'red' : 'blue'}-600 h-2.5 rounded-full" style="width: ${Math.min(usagePercentage, 100)}%"></div>
+                            </div>
+                            <span class="text-xs text-gray-600">${usagePercentage}%</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${config.isActive && !isOverQuota ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${config.isActive && !isOverQuota ? '可用' : '不可用'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function resetMonthlyUsage() {
+            if (confirm('確定要重置所有 SMTP 配置的月使用量嗎？')) {
+                try {
+                    const response = await fetch('/api/reset-monthly-usage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        document.getElementById('resetResult').classList.remove('hidden');
+                        loadSMTPConfigs();
+                        setTimeout(() => {
+                            document.getElementById('resetResult').classList.add('hidden');
+                        }, 5000);
+                    } else {
+                        alert('重置失敗');
+                    }
+                } catch (error) {
+                    console.error('Error resetting monthly usage:', error);
+                    alert('重置失敗');
+                }
+            }
+        }
+
+        // 頁面載入時自動執行重置（用於 cron job）
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('auto') === 'true') {
+            resetMonthlyUsage();
+        }
+
+        loadSMTPConfigs();
+    </script>
+</body>
+</html>

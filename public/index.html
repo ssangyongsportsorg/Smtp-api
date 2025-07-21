@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP 管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-900">SMTP 配置管理</h1>
+                <button onclick="openAddModal()" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
+                    新增 SMTP
+                </button>
+            </div>
+
+            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">名稱</th>
+                            <th scope="col" class="px-6 py-3">主機</th>
+                            <th scope="col" class="px-6 py-3">連接埠</th>
+                            <th scope="col" class="px-6 py-3">使用者名稱</th>
+                            <th scope="col" class="px-6 py-3">月額度</th>
+                            <th scope="col" class="px-6 py-3">已使用</th>
+                            <th scope="col" class="px-6 py-3">狀態</th>
+                            <th scope="col" class="px-6 py-3">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="smtpTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="smtpModal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative p-4 w-full max-w-2xl max-h-full">
+            <div class="relative bg-white rounded-lg shadow">
+                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+                    <h3 class="text-xl font-semibold text-gray-900" id="modalTitle">
+                        新增 SMTP 配置
+                    </h3>
+                    <button type="button" onclick="closeModal()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center">
+                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-4 md:p-5 space-y-4">
+                    <form id="smtpForm">
+                        <input type="hidden" id="editId" />
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900">名稱</label>
+                                <input type="text" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            </div>
+                            <div>
+                                <label for="host" class="block mb-2 text-sm font-medium text-gray-900">主機</label>
+                                <input type="text" id="host" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            </div>
+                            <div>
+                                <label for="port" class="block mb-2 text-sm font-medium text-gray-900">連接埠</label>
+                                <input type="number" id="port" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            </div>
+                            <div>
+                                <label for="username" class="block mb-2 text-sm font-medium text-gray-900">使用者名稱</label>
+                                <input type="text" id="username" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            </div>
+                            <div>
+                                <label for="password" class="block mb-2 text-sm font-medium text-gray-900">密碼</label>
+                                <input type="password" id="password" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            </div>
+                            <div>
+                                <label for="maxMonthlyQuota" class="block mb-2 text-sm font-medium text-gray-900">月額度</label>
+                                <input type="number" id="maxMonthlyQuota" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b">
+                    <button onclick="saveSMTP()" type="button" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">儲存</button>
+                    <button onclick="closeModal()" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script>
+        let smtpConfigs = [];
+
+        async function loadSMTPConfigs() {
+            try {
+                const response = await fetch('/api/smtp-configs');
+                smtpConfigs = await response.json();
+                renderSMTPTable();
+            } catch (error) {
+                console.error('Error loading SMTP configs:', error);
+            }
+        }
+
+        function renderSMTPTable() {
+            const tbody = document.getElementById('smtpTableBody');
+            tbody.innerHTML = '';
+
+            smtpConfigs.forEach(config => {
+                const usagePercentage = (config.currentUsage / config.maxMonthlyQuota * 100).toFixed(1);
+                const isOverQuota = config.currentUsage >= config.maxMonthlyQuota;
+                
+                const row = `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">${config.name}</td>
+                        <td class="px-6 py-4">${config.host}</td>
+                        <td class="px-6 py-4">${config.port}</td>
+                        <td class="px-6 py-4">${config.username}</td>
+                        <td class="px-6 py-4">${config.maxMonthlyQuota}</td>
+                        <td class="px-6 py-4">
+                            <span class="${isOverQuota ? 'text-red-600' : 'text-green-600'}">${config.currentUsage} (${usagePercentage}%)</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${config.isActive && !isOverQuota ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${config.isActive && !isOverQuota ? '可用' : '不可用'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <button onclick="editSMTP(${config.id})" class="font-medium text-blue-600 hover:underline mr-2">編輯</button>
+                            <button onclick="deleteSMTP(${config.id})" class="font-medium text-red-600 hover:underline">刪除</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = '新增 SMTP 配置';
+            document.getElementById('smtpForm').reset();
+            document.getElementById('editId').value = '';
+            document.getElementById('smtpModal').classList.remove('hidden');
+        }
+
+        function editSMTP(id) {
+            const config = smtpConfigs.find(c => c.id === id);
+            if (config) {
+                document.getElementById('modalTitle').textContent = '編輯 SMTP 配置';
+                document.getElementById('editId').value = config.id;
+                document.getElementById('name').value = config.name;
+                document.getElementById('host').value = config.host;
+                document.getElementById('port').value = config.port;
+                document.getElementById('username').value = config.username;
+                document.getElementById('password').value = config.password;
+                document.getElementById('maxMonthlyQuota').value = config.maxMonthlyQuota;
+                document.getElementById('smtpModal').classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('smtpModal').classList.add('hidden');
+        }
+
+        async function saveSMTP() {
+            const formData = {
+                name: document.getElementById('name').value,
+                host: document.getElementById('host').value,
+                port: document.getElementById('port').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                maxMonthlyQuota: document.getElementById('maxMonthlyQuota').value,
+                isActive: true
+            };
+
+            const editId = document.getElementById('editId').value;
+            
+            try {
+                let response;
+                if (editId) {
+                    response = await fetch(`/api/smtp-configs/${editId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    response = await fetch('/api/smtp-configs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                }
+
+                if (response.ok) {
+                    closeModal();
+                    loadSMTPConfigs();
+                } else {
+                    alert('儲存失敗');
+                }
+            } catch (error) {
+                console.error('Error saving SMTP config:', error);
+                alert('儲存失敗');
+            }
+        }
+
+        async function deleteSMTP(id) {
+            if (confirm('確定要刪除此 SMTP 配置嗎？')) {
+                try {
+                    const response = await fetch(`/api/smtp-configs/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        loadSMTPConfigs();
+                    } else {
+                        alert('刪除失敗');
+                    }
+                } catch (error) {
+                    console.error('Error deleting SMTP config:', error);
+                    alert('刪除失敗');
+                }
+            }
+        }
+
+        loadSMTPConfigs();
+    </script>
+</body>
+</html>
