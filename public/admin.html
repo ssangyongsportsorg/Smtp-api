@@ -400,6 +400,7 @@
             <div id="logs" class="tab-content">
                 <h3>郵件發送記錄</h3>
                 <div id="logsMessage"></div>
+                <button id="clearEmailLogsBtn" class="btn btn-danger" style="margin-bottom: 10px;">全部刪除</button>
                 <table class="table">
                     <thead>
                         <tr>
@@ -1048,6 +1049,23 @@
                 }
             });
         }
+
+        // 全部刪除 email log
+        document.getElementById('clearEmailLogsBtn').addEventListener('click', async function() {
+            if (!confirm('確定要刪除所有郵件記錄嗎？此操作無法還原。')) return;
+            try {
+                const response = await apiRequest('/api/admin/email-logs/clear', { method: 'DELETE' });
+                if (response && response.ok) {
+                    showMessage('logsMessage', '所有郵件記錄已刪除', 'success');
+                    loadEmailLogs();
+                } else {
+                    const error = await response.json();
+                    showMessage('logsMessage', error.error || '刪除失敗', 'error');
+                }
+            } catch (error) {
+                showMessage('logsMessage', '刪除失敗', 'error');
+            }
+        });
     </script>
 </body>
 </html>
