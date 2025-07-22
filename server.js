@@ -436,6 +436,16 @@ app.get('/api/admin/email-logs', authenticateToken, async (req, res) => {
   }
 });
 
+// 新增：全部刪除 email log
+app.delete('/api/admin/email-logs/clear', authenticateToken, async (req, res) => {
+  try {
+    await prisma.emailLog.deleteMany({});
+    res.json({ message: '所有郵件記錄已刪除' });
+  } catch (error) {
+    res.status(500).json({ error: '刪除郵件記錄失敗' });
+  }
+});
+
 // Reset monthly usage (admin only)
 app.post('/api/admin/reset-monthly-usage', authenticateToken, async (req, res) => {
   try {
