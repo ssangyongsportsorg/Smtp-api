@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: smtp-rotation-system
+    env: node
+    buildCommand: npm install && npx prisma generate
+    startCommand: npx prisma db push && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smtp-rotation-db
+          property: connectionString
+      - key: ALLOWED_ORIGINS
+        value: https://smtp-rotation-system.onrender.com
+
+databases:
+  - name: smtp-rotation-db
+    databaseName: smtp_rotation_db
+    user: smtp_rotation_user
