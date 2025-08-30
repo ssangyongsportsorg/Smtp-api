@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理員後台測試</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>管理員後台功能測試</h1>
+    
+    <div class="test-section">
+        <h3>1. 服務器狀態檢查</h3>
+        <button onclick="checkServerStatus()">檢查服務器狀態</button>
+        <div id="serverStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 管理員登錄測試</h3>
+        <input type="text" id="username" placeholder="用戶名" value="admin">
+        <input type="password" id="password" placeholder="密碼" value="admin123">
+        <button onclick="testLogin()">測試登錄</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 管理員後台訪問測試</h3>
+        <button onclick="testAdminPanel()">測試後台功能</button>
+        <div id="adminPanelResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. 直接訪問管理員頁面</h3>
+        <a href="http://localhost:3000/admin" target="_blank">點擊這裡打開管理員後台</a>
+    </div>
+
+    <script>
+        async function checkServerStatus() {
+            const resultDiv = document.getElementById('serverStatus');
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                resultDiv.innerHTML = `<div class="success">✅ 服務器正常運行<br>狀態: ${data.status}<br>數據庫: ${data.database}<br>管理員配置: ${data.adminConfigured}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 服務器連接失敗: ${error.message}</div>`;
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ 登錄成功<br>用戶: ${data.admin.username}<br>Token: ${data.token.substring(0, 20)}...</div>`;
+                    localStorage.setItem('adminToken', data.token);
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 登錄失敗: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 登錄錯誤: ${error.message}</div>`;
+            }
+        }
+
+        async function testAdminPanel() {
+            const resultDiv = document.getElementById('adminPanelResult');
+            const token = localStorage.getItem('adminToken');
+
+            if (!token) {
+                resultDiv.innerHTML = `<div class="error">❌ 請先登錄</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/smtp-configs', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<div class="success">✅ 後台功能正常<br>SMTP配置數量: ${data.length}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 後台功能測試失敗: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 後台功能錯誤: ${error.message}</div>`;
+            }
+        }
+
+        // 頁面加載時自動檢查服務器狀態
+        window.onload = function() {
+            checkServerStatus();
+        };
+    </script>
+</body>
+</html>

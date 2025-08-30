@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP 管理系統 - 調試版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-50">
+    <!-- Debug Console -->
+    <div id="debugConsole" class="fixed top-0 right-0 w-96 h-64 bg-black text-green-400 p-4 text-xs overflow-auto z-50">
+        <div class="text-white mb-2">調試控制台</div>
+        <div id="debugLog"></div>
+    </div>
+
+    <!-- Login/Register Form -->
+    <div id="authForm" class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div>
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900" id="authTitle">
+                    管理員登入
+                </h2>
+                <p class="mt-2 text-center text-sm text-gray-600" id="authSubtitle">
+                    請輸入您的帳號密碼
+                </p>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="mt-8 space-y-6">
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div>
+                        <label for="loginUsername" class="sr-only">使用者名稱</label>
+                        <input id="loginUsername" name="username" type="text" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="使用者名稱" value="admin">
+                    </div>
+                    <div>
+                        <label for="loginPassword" class="sr-only">密碼</label>
+                        <input id="loginPassword" name="password" type="password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="密碼" value="admin123">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        登入
+                    </button>
+                </div>
+            </form>
+
+            <div class="text-center">
+                <button id="testConnection" class="text-blue-600 hover:text-blue-500 text-sm">
+                    測試連接
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden">
+        <!-- Header -->
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-semibold text-gray-900">SMTP 管理系統 - 調試版</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="adminInfo" class="text-sm text-gray-700"></span>
+                        <button onclick="logout()" class="text-red-600 hover:text-red-800 text-sm font-medium">登出</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Simple Test Panel -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">功能測試</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <button onclick="testSmtpConfigs()" class="bg-blue-500 text-white px-4 py-2 rounded">
+                            測試 SMTP 配置
+                        </button>
+                        <div id="smtpTestResult" class="mt-2"></div>
+                    </div>
+                    
+                    <div>
+                        <button onclick="testApiKeys()" class="bg-green-500 text-white px-4 py-2 rounded">
+                            測試 API 金鑰
+                        </button>
+                        <div id="apiKeysTestResult" class="mt-2"></div>
+                    </div>
+                    
+                    <div>
+                        <button onclick="testEmailLogs()" class="bg-purple-500 text-white px-4 py-2 rounded">
+                            測試郵件記錄
+                        </button>
+                        <div id="emailLogsTestResult" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script>
+        let currentUser = null;
+
+        // Debug logging
+        function debugLog(message) {
+            const logDiv = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[DEBUG] ${message}`);
+        }
+
+        // Test connection
+        document.getElementById('testConnection').addEventListener('click', async function() {
+            debugLog('測試服務器連接...');
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                debugLog(`服務器狀態: ${data.status}`);
+                debugLog(`數據庫: ${data.database}`);
+                debugLog(`管理員配置: ${data.adminConfigured}`);
+            } catch (error) {
+                debugLog(`連接錯誤: ${error.message}`);
+            }
+        });
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            debugLog('嘗試登錄...');
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                debugLog(`登錄響應: ${response.status}`);
+
+                if (response.ok) {
+                    debugLog('登錄成功');
+                    localStorage.setItem('adminToken', data.token);
+                    currentUser = data.admin;
+                    showAdminPanel();
+                } else {
+                    debugLog(`登錄失敗: ${data.error}`);
+                    alert(data.error || '登入失敗');
+                }
+            } catch (error) {
+                debugLog(`登錄錯誤: ${error.message}`);
+                alert('登入失敗');
+            }
+        });
+
+        function showAdminPanel() {
+            debugLog('顯示管理員面板');
+            document.getElementById('authForm').classList.add('hidden');
+            document.getElementById('adminPanel').classList.remove('hidden');
+            document.getElementById('adminInfo').textContent = `歡迎，${currentUser.username}`;
+        }
+
+        function logout() {
+            debugLog('登出');
+            localStorage.removeItem('adminToken');
+            currentUser = null;
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('authForm').classList.remove('hidden');
+        }
+
+        async function testSmtpConfigs() {
+            debugLog('測試 SMTP 配置...');
+            const resultDiv = document.getElementById('smtpTestResult');
+            
+            try {
+                const response = await fetch('/api/admin/smtp-configs', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
+                
+                debugLog(`SMTP 配置響應: ${response.status}`);
+                
+                if (response.ok) {
+                    const configs = await response.json();
+                    debugLog(`SMTP 配置數量: ${configs.length}`);
+                    resultDiv.innerHTML = `<div class="text-green-600">✅ 成功獲取 ${configs.length} 個 SMTP 配置</div>`;
+                } else {
+                    const error = await response.json();
+                    debugLog(`SMTP 配置錯誤: ${error.error}`);
+                    resultDiv.innerHTML = `<div class="text-red-600">❌ 錯誤: ${error.error}</div>`;
+                }
+            } catch (error) {
+                debugLog(`SMTP 配置異常: ${error.message}`);
+                resultDiv.innerHTML = `<div class="text-red-600">❌ 異常: ${error.message}</div>`;
+            }
+        }
+
+        async function testApiKeys() {
+            debugLog('測試 API 金鑰...');
+            const resultDiv = document.getElementById('apiKeysTestResult');
+            
+            try {
+                const response = await fetch('/api/admin/api-keys', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
+                
+                debugLog(`API 金鑰響應: ${response.status}`);
+                
+                if (response.ok) {
+                    const keys = await response.json();
+                    debugLog(`API 金鑰數量: ${keys.length}`);
+                    resultDiv.innerHTML = `<div class="text-green-600">✅ 成功獲取 ${keys.length} 個 API 金鑰</div>`;
+                } else {
+                    const error = await response.json();
+                    debugLog(`API 金鑰錯誤: ${error.error}`);
+                    resultDiv.innerHTML = `<div class="text-red-600">❌ 錯誤: ${error.error}</div>`;
+                }
+            } catch (error) {
+                debugLog(`API 金鑰異常: ${error.message}`);
+                resultDiv.innerHTML = `<div class="text-red-600">❌ 異常: ${error.message}</div>`;
+            }
+        }
+
+        async function testEmailLogs() {
+            debugLog('測試郵件記錄...');
+            const resultDiv = document.getElementById('emailLogsTestResult');
+            
+            try {
+                const response = await fetch('/api/admin/email-logs?page=1&limit=10', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                });
+                
+                debugLog(`郵件記錄響應: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    debugLog(`郵件記錄數量: ${data.logs.length}, 總數: ${data.pagination.total}`);
+                    resultDiv.innerHTML = `<div class="text-green-600">✅ 成功獲取 ${data.logs.length} 條記錄 (總共 ${data.pagination.total} 條)</div>`;
+                } else {
+                    const error = await response.json();
+                    debugLog(`郵件記錄錯誤: ${error.error}`);
+                    resultDiv.innerHTML = `<div class="text-red-600">❌ 錯誤: ${error.error}</div>`;
+                }
+            } catch (error) {
+                debugLog(`郵件記錄異常: ${error.message}`);
+                resultDiv.innerHTML = `<div class="text-red-600">❌ 異常: ${error.message}</div>`;
+            }
+        }
+
+        // Initialize
+        debugLog('頁面加載完成');
+        debugLog('請點擊"測試連接"按鈕檢查服務器狀態');
+    </script>
+</body>
+</html>
