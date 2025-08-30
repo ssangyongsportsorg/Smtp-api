@@ -20,17 +20,20 @@ model Admin {
 }
 
 model ApiKey {
-  id          Int      @id @default(autoincrement())
-  keyName     String   @unique
-  keyValue    String   @unique
-  isActive    Boolean  @default(true)
-  usageCount  Int      @default(0)
-  maxUsage    Int?     // null means unlimited
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  expiresAt   DateTime?
+  id              Int      @id @default(autoincrement())
+  keyName         String   @unique
+  keyValue        String   @unique
+  isActive        Boolean  @default(true)
+  usageCount      Int      @default(0)
+  maxUsage        Int?     // null means unlimited
+  maxHourlyQuota  Int?     // null means unlimited
+  maxDailyQuota   Int?     // null means unlimited
+  maxMonthlyQuota Int?     // null means unlimited
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  expiresAt       DateTime?
 
-  emailLogs   EmailLog[]
+  emailLogs       EmailLog[]
 
   @@map("api_keys")
 }

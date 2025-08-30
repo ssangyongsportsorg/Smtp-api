@@ -1,24 +1,91 @@
-# SMTP 輪播系統 API 文檔
+# API 文檔
 
 ## 概述
 
-這是一個 SMTP 輪播系統，支持管理員認證、API 密鑰管理和電子郵件發送功能。系統使用 PostgreSQL 數據庫，提供完整的管理界面和 API。
+SMTP 輪播系統提供 RESTful API 來管理 SMTP 配置、API key 和發送郵件。
 
-## 管理員功能
+## 認證
 
-### 1. 管理員登入
+### JWT Token (管理員 API)
+管理員 API 需要在請求標頭中包含 JWT token：
+```
+Authorization: Bearer <your-jwt-token>
+```
 
-**端點:** `POST /api/admin/login`
+### API Key (郵件發送 API)
+郵件發送 API 需要在請求標頭中包含 API key：
+```
+x-api-key: <your-api-key>
+```
 
-**請求體:**
+## 端點
+
+### 系統狀態
+
+#### GET /api/status
+檢查系統狀態
+
+**回應：**
 ```json
 {
-  "username": "admin",
-  "password": "admin123"
+  "status": "online",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "database": "connected",
+  "adminConfigured": true,
+  "uptime": 3600,
+  "version": "1.0.0"
 }
 ```
 
-**回應:**
+### 管理員認證
+
+#### GET /api/admin/check-registration
+檢查是否需要註冊管理員
+
+**回應：**
+```json
+{
+  "needsRegistration": false
+}
+```
+
+#### POST /api/admin/register
+註冊第一個管理員帳號（僅在沒有管理員時可用）
+
+**請求體：**
+```json
+{
+  "username": "admin",
+  "email": "admin@example.com",
+  "password": "securepassword123"
+}
+```
+
+**回應：**
+```json
+{
+  "message": "Admin registered successfully",
+  "token": "jwt-token-here",
+  "admin": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com"
+  }
+}
+```
+
+#### POST /api/admin/login
+管理員登入
+
+**請求體：**
+```json
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
+
+**回應：**
 ```json
 {
   "message": "Login successful",
@@ -31,295 +98,296 @@
 }
 ```
 
-**默認管理員帳號:**
-- 用戶名: `admin`
-- 密碼: `admin123`
-- 電子郵件: `admin@example.com`
+#### POST /api/admin/change-password
+更改管理員密碼
 
-### 2. 更改密碼
-
-**端點:** `POST /api/admin/change-password`
-
-**Headers:**
-```
-Authorization: Bearer <jwt-token>
-```
-
-**請求體:**
+**請求體：**
 ```json
 {
-  "currentPassword": "admin123",
-  "newPassword": "new-secure-password"
+  "currentPassword": "oldpassword",
+  "newPassword": "newpassword123"
 }
 ```
 
-## API 密鑰管理
+### SMTP 配置管理
 
-### 1. 獲取所有 API 密鑰
+#### GET /api/admin/smtp-configs
+取得所有 SMTP 配置
 
-**端點:** `GET /api/admin/api-keys`
-
-**Headers:**
-```
-Authorization: Bearer <jwt-token>
-```
-
-### 2. 創建新 API 密鑰
-
-**端點:** `POST /api/admin/api-keys`
-
-**Headers:**
-```
-Authorization: Bearer <jwt-token>
-```
-
-**請求體:**
+**回應：**
 ```json
-{
-  "keyName": "測試 API 密鑰",
-  "maxUsage": 1000,
-  "expiresAt": "2024-12-31T23:59:59.000Z"
-}
+[
+  {
+    "id": 1,
+    "name": "Gmail SMTP",
+    "host": "smtp.gmail.com",
+    "port": 587,
+    "username": "user@gmail.com",
+    "password": "encrypted-password",
+    "maxMonthlyQuota": 1000,
+    "currentUsage": 150,
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
 ```
 
-**回應:**
-```json
-{
-  "id": 1,
-  "keyName": "測試 API 密鑰",
-  "keyValue": "generated-64-character-hex-key",
-  "isActive": true,
-  "usageCount": 0,
-  "maxUsage": 1000,
-  "expiresAt": "2024-12-31T23:59:59.000Z",
-  "createdAt": "2024-01-01T00:00:00.000Z"
-}
-```
+#### POST /api/admin/smtp-configs
+新增 SMTP 配置
 
-### 3. 更新 API 密鑰
-
-**端點:** `PUT /api/admin/api-keys/:id`
-
-### 4. 刪除 API 密鑰
-
-**端點:** `DELETE /api/admin/api-keys/:id`
-
-## SMTP 配置管理
-
-### 1. 獲取所有 SMTP 配置
-
-**端點:** `GET /api/admin/smtp-configs`
-
-### 2. 創建 SMTP 配置
-
-**端點:** `POST /api/admin/smtp-configs`
-
-**請求體:**
+**請求體：**
 ```json
 {
   "name": "Gmail SMTP",
   "host": "smtp.gmail.com",
   "port": 587,
-  "username": "your-email@gmail.com",
-  "password": "your-app-password",
-  "maxMonthlyQuota": 10000
+  "username": "user@gmail.com",
+  "password": "app-password",
+  "maxMonthlyQuota": 1000
 }
 ```
 
-### 3. 更新 SMTP 配置
+#### PUT /api/admin/smtp-configs/:id
+更新 SMTP 配置
 
-**端點:** `PUT /api/admin/smtp-configs/:id`
-
-### 4. 刪除 SMTP 配置
-
-**端點:** `DELETE /api/admin/smtp-configs/:id`
-
-## 電子郵件發送
-
-### 發送電子郵件 (公開 API)
-
-**端點:** `POST /api/send-email`
-
-**Headers:**
+**請求體：**
+```json
+{
+  "name": "Updated Gmail SMTP",
+  "host": "smtp.gmail.com",
+  "port": 587,
+  "username": "user@gmail.com",
+  "password": "new-app-password",
+  "maxMonthlyQuota": 2000,
+  "isActive": true
+}
 ```
-X-API-Key: your-api-key-here
+
+#### DELETE /api/admin/smtp-configs/:id
+刪除 SMTP 配置
+
+### API Key 管理
+
+#### GET /api/admin/api-keys
+取得所有 API key
+
+**回應：**
+```json
+[
+  {
+    "id": 1,
+    "keyName": "Production API Key",
+    "keyValue": "abc123...",
+    "isActive": true,
+    "usageCount": 150,
+    "maxUsage": 1000,
+    "maxHourlyQuota": 10,
+    "maxDailyQuota": 100,
+    "maxMonthlyQuota": 1000,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "expiresAt": "2024-12-31T23:59:59.000Z"
+  }
+]
+```
+
+#### POST /api/admin/api-keys
+新增 API key
+
+**請求體：**
+```json
+{
+  "keyName": "Production API Key",
+  "maxUsage": 1000,
+  "maxHourlyQuota": 10,
+  "maxDailyQuota": 100,
+  "maxMonthlyQuota": 1000,
+  "expiresAt": "2024-12-31T23:59:59.000Z"
+}
+```
+
+#### PUT /api/admin/api-keys/:id
+更新 API key
+
+**請求體：**
+```json
+{
+  "keyName": "Updated API Key",
+  "maxUsage": 2000,
+  "maxHourlyQuota": 20,
+  "maxDailyQuota": 200,
+  "maxMonthlyQuota": 2000,
+  "isActive": true,
+  "expiresAt": "2024-12-31T23:59:59.000Z"
+}
+```
+
+#### DELETE /api/admin/api-keys/:id
+刪除 API key
+
+### 郵件發送
+
+#### POST /api/send-email
+發送郵件
+
+**請求標頭：**
+```
+x-api-key: your-api-key-here
 Content-Type: application/json
 ```
 
-**請求體:**
+**請求體：**
 ```json
 {
   "to": "recipient@example.com",
   "subject": "測試郵件",
-  "text": "這是純文本內容",
-  "html": "<h1>這是 HTML 內容</h1><p>支持 HTML 格式</p>",
+  "text": "這是純文字內容",
+  "html": "<h1>這是 HTML 內容</h1>",
   "from": "sender@example.com"
 }
 ```
 
-**參數說明:**
-- `to` (必填): 收件人郵箱地址
-- `subject` (必填): 郵件主題
-- `text` (可選): 純文本內容
-- `html` (可選): HTML 格式內容
-- `from` (可選): 寄件人郵箱地址，如不提供則使用 SMTP 配置的用戶名
-
-**回應:**
+**回應：**
 ```json
 {
   "message": "Email sent successfully",
   "usedSmtp": "Gmail SMTP",
-  "newUsage": 1
+  "newUsage": 151,
+  "quotas": {
+    "hourly": { "used": 5, "limit": 10 },
+    "daily": { "used": 25, "limit": 100 },
+    "monthly": { "used": 151, "limit": 1000 }
+  }
 }
 ```
 
-## 郵件記錄
+### 郵件記錄
 
-### 獲取郵件記錄
+#### GET /api/admin/email-logs
+取得郵件記錄
 
-**端點:** `GET /api/admin/email-logs`
+**查詢參數：**
+- `page`: 頁碼 (預設: 1)
+- `limit`: 每頁記錄數 (預設: 50)
 
-**查詢參數:**
-- `page`: 頁碼 (默認: 1)
-- `limit`: 每頁記錄數 (默認: 50)
-
-## 系統設置
-
-### 重置月使用量
-
-**端點:** `POST /api/admin/reset-monthly-usage`
-
-## 錯誤代碼
-
-- `400`: 請求參數錯誤
-- `401`: 未授權 (缺少或無效的 API 密鑰/JWT)
-- `403`: 禁止訪問 (JWT 過期)
-- `404`: 資源不存在
-- `429`: 請求過多 (API 密鑰使用限制)
-- `500`: 服務器內部錯誤
-- `503`: 服務不可用 (沒有可用的 SMTP 配置)
-
-## 環境配置
-
-創建 `.env` 文件：
-
-```env
-# 數據庫
-DATABASE_URL="postgresql://username:password@localhost:5432/smtp_rotation_db?schema=public"
-
-# 服務器
-PORT=3000
-
-# JWT 密鑰 (請更改為您自己的密鑰)
-JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
-
-# Session 密鑰 (請更改為您自己的密鑰)
-SESSION_SECRET="your-super-secret-session-key-change-this-in-production"
-
-# 默認管理員帳號 (首次運行時創建)
-DEFAULT_ADMIN_USERNAME="admin"
-DEFAULT_ADMIN_PASSWORD="admin123"
-DEFAULT_ADMIN_EMAIL="admin@example.com"
-
-# API 設置
-API_RATE_LIMIT=1000
+**回應：**
+```json
+{
+  "logs": [
+    {
+      "id": 1,
+      "to": "recipient@example.com",
+      "subject": "測試郵件",
+      "status": "sent",
+      "sentAt": "2024-01-01T00:00:00.000Z",
+      "apiKey": { "keyName": "Production API Key" },
+      "smtpConfig": { "name": "Gmail SMTP" }
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 100,
+    "pages": 2
+  }
+}
 ```
 
-## 安裝和運行
+#### DELETE /api/admin/email-logs/clear
+清空所有郵件記錄
 
-1. 安裝依賴：
-```bash
-npm install
+### 系統管理
+
+#### POST /api/admin/reset-monthly-usage
+重置所有 SMTP 的月使用量
+
+## 錯誤處理
+
+### 錯誤回應格式
+```json
+{
+  "error": "錯誤訊息",
+  "details": "詳細錯誤資訊 (可選)"
+}
 ```
 
-2. 設置 PostgreSQL 數據庫並更新 `.env` 文件中的 `DATABASE_URL`
+### 常見錯誤碼
 
-3. 生成 Prisma 客戶端：
-```bash
-npm run db:generate
-```
+- `400` - 請求參數錯誤
+- `401` - 未授權 (缺少或無效的 token/API key)
+- `403` - 禁止存取
+- `429` - 速率限制超出
+- `500` - 伺服器內部錯誤
+- `503` - 服務不可用
 
-4. 推送數據庫架構：
-```bash
-npm run db:push
-```
+### 速率限制
 
-5. 啟動服務器：
-```bash
-npm run dev  # 開發模式
-# 或
-npm start   # 生產模式
-```
-
-6. 訪問管理界面：
-- 主頁: `http://localhost:3000`
-- 管理後台: `http://localhost:3000/admin`
-
-## 安全建議
-
-1. **更改默認密碼**: 首次登入後立即更改管理員密碼
-2. **更新 JWT 密鑰**: 在生產環境中使用強密鑰
-3. **API 密鑰管理**: 定期輪換 API 密鑰
-4. **使用 HTTPS**: 在生產環境中啟用 SSL/TLS
-5. **數據庫安全**: 確保數據庫連接安全
-6. **訪問控制**: 限制管理界面的網絡訪問
+- **一般 API**: 15分鐘內最多100次請求
+- **管理員 API**: 15分鐘內最多10次請求
+- **登入 API**: 15分鐘內最多5次嘗試
+- **API Key 限制**: 可設定每小時、每日、每月限制
 
 ## 使用範例
 
-### JavaScript 發送郵件範例
-
-```javascript
-const apiKey = 'your-api-key-here';
-const apiUrl = 'http://localhost:3000/api/send-email';
-
-async function sendEmail() {
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKey
-      },
-      body: JSON.stringify({
-        to: 'recipient@example.com',
-        subject: '測試郵件',
-        text: '這是純文本內容',
-        html: '<h1>Hello World</h1><p>這是 HTML 郵件</p>',
-        from: 'sender@example.com'
-      })
-    });
-
-    const result = await response.json();
-    console.log('郵件發送結果:', result);
-  } catch (error) {
-    console.error('發送郵件失敗:', error);
-  }
-}
-
-sendEmail();
-```
-
-### cURL 範例
-
+### 使用 cURL 發送郵件
 ```bash
 curl -X POST http://localhost:3000/api/send-email \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: your-api-key-here" \
+  -H "x-api-key: your-api-key-here" \
   -d '{
-    "to": "recipient@example.com",
+    "to": "test@example.com",
     "subject": "測試郵件",
-    "text": "這是純文本內容",
-    "html": "<h1>Hello World</h1><p>這是 HTML 郵件</p>",
-    "from": "sender@example.com"
+    "text": "這是測試內容",
+    "html": "<h1>測試標題</h1><p>這是測試內容</p>"
   }'
 ```
 
-## 支持
+### 使用 JavaScript 發送郵件
+```javascript
+const response = await fetch('http://localhost:3000/api/send-email', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-api-key': 'your-api-key-here'
+  },
+  body: JSON.stringify({
+    to: 'test@example.com',
+    subject: '測試郵件',
+    text: '這是測試內容',
+    html: '<h1>測試標題</h1><p>這是測試內容</p>'
+  })
+});
 
-如有問題，請檢查：
-1. 數據庫連接是否正確
-2. SMTP 配置是否有效
-3. API 密鑰是否有效且未過期
-4. 日誌中的錯誤消息
+const result = await response.json();
+console.log(result);
+```
 
-管理界面提供了完整的監控和管理功能，包括 SMTP 狀態、API 使用統計和郵件發送記錄。
+### 使用 Python 發送郵件
+```python
+import requests
+
+response = requests.post(
+    'http://localhost:3000/api/send-email',
+    headers={
+        'Content-Type': 'application/json',
+        'x-api-key': 'your-api-key-here'
+    },
+    json={
+        'to': 'test@example.com',
+        'subject': '測試郵件',
+        'text': '這是測試內容',
+        'html': '<h1>測試標題</h1><p>這是測試內容</p>'
+    }
+)
+
+result = response.json()
+print(result)
+```
+
+## 注意事項
+
+1. **API Key 安全**: 請妥善保管您的 API key，不要暴露在客戶端代碼中
+2. **速率限制**: 請注意各種速率限制，避免超出限制
+3. **錯誤處理**: 請妥善處理 API 錯誤回應
+4. **HTTPS**: 生產環境請使用 HTTPS
+5. **日誌記錄**: 建議記錄所有 API 調用以便監控和除錯
