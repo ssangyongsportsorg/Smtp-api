@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>後台功能測試</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">後台功能測試</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 註冊測試 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">註冊測試</h2>
+                <form id="registerForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">使用者名稱</label>
+                        <input type="text" id="regUsername" value="admin2" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">電子郵件</label>
+                        <input type="email" id="regEmail" value="admin2@example.com" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">密碼</label>
+                        <input type="password" id="regPassword" value="admin123456" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                        註冊
+                    </button>
+                </form>
+                <div id="registerResult" class="mt-4 p-3 bg-gray-100 rounded hidden"></div>
+            </div>
+
+            <!-- 登入測試 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">登入測試</h2>
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">使用者名稱</label>
+                        <input type="text" id="loginUsername" value="admin" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">密碼</label>
+                        <input type="password" id="loginPassword" value="admin123456" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+                        登入
+                    </button>
+                </form>
+                <div id="loginResult" class="mt-4 p-3 bg-gray-100 rounded hidden"></div>
+            </div>
+
+            <!-- API測試 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">API測試</h2>
+                <div class="space-y-4">
+                    <button onclick="testCheckRegistration()" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700">
+                        檢查註冊狀態
+                    </button>
+                    <button onclick="testSmtpConfigs()" class="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700">
+                        測試SMTP配置API
+                    </button>
+                    <button onclick="testApiKeys()" class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700">
+                        測試API金鑰API
+                    </button>
+                </div>
+                <div id="apiResult" class="mt-4 p-3 bg-gray-100 rounded hidden"></div>
+            </div>
+
+            <!-- 狀態顯示 -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4">系統狀態</h2>
+                <div id="statusDisplay" class="space-y-2">
+                    <div>伺服器狀態: <span id="serverStatus" class="font-semibold">檢查中...</span></div>
+                    <div>資料庫狀態: <span id="dbStatus" class="font-semibold">檢查中...</span></div>
+                    <div>管理員配置: <span id="adminStatus" class="font-semibold">檢查中...</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 完整後台連結 -->
+        <div class="mt-8 bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">完整後台管理</h2>
+            <a href="/admin.html" class="inline-block bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 text-lg">
+                進入完整後台管理系統
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // 檢查系統狀態
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                document.getElementById('serverStatus').textContent = data.status;
+                document.getElementById('dbStatus').textContent = data.database;
+                document.getElementById('adminStatus').textContent = data.adminConfigured ? '已配置' : '未配置';
+                
+                document.getElementById('serverStatus').className = data.status === 'online' ? 'font-semibold text-green-600' : 'font-semibold text-red-600';
+                document.getElementById('dbStatus').className = data.database === 'connected' ? 'font-semibold text-green-600' : 'font-semibold text-red-600';
+                document.getElementById('adminStatus').className = data.adminConfigured ? 'font-semibold text-green-600' : 'font-semibold text-yellow-600';
+            } catch (error) {
+                console.error('Error checking status:', error);
+                document.getElementById('serverStatus').textContent = '錯誤';
+                document.getElementById('serverStatus').className = 'font-semibold text-red-600';
+            }
+        }
+
+        // 註冊測試
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const resultDiv = document.getElementById('registerResult');
+            
+            try {
+                const response = await fetch('/api/admin/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('regUsername').value,
+                        email: document.getElementById('regEmail').value,
+                        password: document.getElementById('regPassword').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.textContent = '註冊成功！Token: ' + data.token.substring(0, 20) + '...';
+                    resultDiv.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded';
+                } else {
+                    resultDiv.textContent = '註冊失敗: ' + data.error;
+                    resultDiv.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                }
+                resultDiv.classList.remove('hidden');
+            } catch (error) {
+                resultDiv.textContent = '註冊錯誤: ' + error.message;
+                resultDiv.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                resultDiv.classList.remove('hidden');
+            }
+        });
+
+        // 登入測試
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('loginUsername').value,
+                        password: document.getElementById('loginPassword').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('adminToken', data.token);
+                    resultDiv.textContent = '登入成功！Token已儲存';
+                    resultDiv.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded';
+                } else {
+                    resultDiv.textContent = '登入失敗: ' + data.error;
+                    resultDiv.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                }
+                resultDiv.classList.remove('hidden');
+            } catch (error) {
+                resultDiv.textContent = '登入錯誤: ' + error.message;
+                resultDiv.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                resultDiv.classList.remove('hidden');
+            }
+        });
+
+        // API測試函數
+        async function testCheckRegistration() {
+            const resultDiv = document.getElementById('apiResult');
+            try {
+                const response = await fetch('/api/admin/check-registration');
+                const data = await response.json();
+                resultDiv.textContent = '註冊狀態: ' + JSON.stringify(data);
+                resultDiv.className = 'mt-4 p-3 bg-blue-100 text-blue-800 rounded';
+                resultDiv.classList.remove('hidden');
+            } catch (error) {
+                resultDiv.textContent = 'API錯誤: ' + error.message;
+                resultDiv.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                resultDiv.classList.remove('hidden');
+            }
+        }
+
+        async function testSmtpConfigs() {
+            const resultDiv = document.getElementById('apiResult');
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                resultDiv.textContent = '請先登入';
+                resultDiv.className = 'mt-4 p-3 bg-yellow-100 text-yellow-800 rounded';
+                resultDiv.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/smtp-configs', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                resultDiv.textContent = 'SMTP配置: ' + JSON.stringify(data);
+                resultDiv.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded';
+                resultDiv.classList.remove('hidden');
+            } catch (error) {
+                resultDiv.textContent = 'API錯誤: ' + error.message;
+                resultDiv.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                resultDiv.classList.remove('hidden');
+            }
+        }
+
+        async function testApiKeys() {
+            const resultDiv = document.getElementById('apiResult');
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                resultDiv.textContent = '請先登入';
+                resultDiv.className = 'mt-4 p-3 bg-yellow-100 text-yellow-800 rounded';
+                resultDiv.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/api-keys', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                resultDiv.textContent = 'API金鑰: ' + JSON.stringify(data);
+                resultDiv.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded';
+                resultDiv.classList.remove('hidden');
+            } catch (error) {
+                resultDiv.textContent = 'API錯誤: ' + error.message;
+                resultDiv.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                resultDiv.classList.remove('hidden');
+            }
+        }
+
+        // 頁面載入時檢查狀態
+        checkSystemStatus();
+    </script>
+</body>
+</html>
